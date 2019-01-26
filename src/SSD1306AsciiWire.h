@@ -70,6 +70,11 @@ class SSD1306AsciiWire : public SSD1306Ascii {
       Wire.endTransmission();
       m_nData = 0;
     }
+	if (mode == SSD1306_MODE_RAM_BUF_END && m_nData > 0) {
+      Wire.endTransmission();
+      m_nData = 0;
+	  return;
+	}
     if (m_nData == 0) {
       Wire.beginTransmission(m_i2cAddr);
       Wire.write(mode == SSD1306_MODE_CMD ? 0X00 : 0X40);

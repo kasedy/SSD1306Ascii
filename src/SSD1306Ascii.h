@@ -39,7 +39,7 @@
  *
  * If INCLUDE_SCROLLING is nonzero, the scroll feature will included.
  */
-#define INCLUDE_SCROLLING 1
+#define INCLUDE_SCROLLING 0
 
 /** Initial scroll mode, SCROLL_MODE_OFF,
     SCROLL_MODE_AUTO, or SCROLL_MODE_APP. */
@@ -66,6 +66,7 @@
 #define SSD1306_MODE_RAM     1
 /** Write to display RAM with possible buffering. */
 #define SSD1306_MODE_RAM_BUF 2
+#define SSD1306_MODE_RAM_BUF_END 3
 //-----------------------------------------------------------------------------
 /**
  * @brief Reset the display controller.
@@ -86,7 +87,7 @@ inline void oledReset(uint8_t rst) {
  */
 class SSD1306Ascii : public Print {
  public:
-  SSD1306Ascii() {}
+  SSD1306Ascii() : m_magFactor(1), m_col_changed(true), m_row_changed(true) {}
 #if INCLUDE_SCROLLING
 //------------------------------------------------------------------------------
   /**
@@ -375,6 +376,9 @@ class SSD1306Ascii : public Print {
    */
   size_t write(const char* s);
 
+private:
+  void updateCursor();
+  
  protected:
   uint16_t fontSize() const;
   virtual void writeDisplay(uint8_t b, uint8_t mode) = 0;
@@ -391,6 +395,8 @@ class SSD1306Ascii : public Print {
 #endif  // INCLUDE_SCROLLING
   const uint8_t* m_font = nullptr;  // Current font.
   uint8_t m_invertMask = 0;  // font invert mask
-  uint8_t m_magFactor = 1;   // Magnification factor.
+  uint8_t m_magFactor:2;   // Magnification factor.
+  bool m_col_changed:1;
+  bool m_row_changed:1;
 };
 #endif  // SSD1306Ascii_h

@@ -121,10 +121,10 @@ void SSD1306Ascii::invertDisplay(bool invert) {
 //------------------------------------------------------------------------------
 void SSD1306Ascii::setCol(uint8_t col) {
   if (col >= m_displayWidth) return;
-  m_col = col;
-  col += m_colOffset;
-  ssd1306WriteCmd(SSD1306_SETLOWCOLUMN | (col & 0XF));
-  ssd1306WriteCmd(SSD1306_SETHIGHCOLUMN | (col >> 4));
+  if (m_col != col) {
+    m_col = col;
+    m_col_changed = true;
+  }
 }
 //------------------------------------------------------------------------------
 void SSD1306Ascii::setContrast(uint8_t value) {
@@ -150,12 +150,27 @@ void SSD1306Ascii::setRow(uint8_t row) {
   if (row >= displayRows()) {
     return;
   }
-  m_row = row;
-#if INCLUDE_SCROLLING
-  ssd1306WriteCmd(SSD1306_SETSTARTPAGE | ((m_row + m_pageOffset) & 7));
-#else  // INCLUDE_SCROLLING
-  ssd1306WriteCmd(SSD1306_SETSTARTPAGE | m_row);
-#endif  // INCLUDE_SCROLLING
+  if (m_row != row) {
+    m_row = row;
+    m_row_changed = true;
+  }
+}
+
+void SSD1306Ascii::updateCursor() { 
+  if (m_col_changed) {
+    m_col_changed = false;
+    uint8_t col = m_col + m_colOffset;
+    ssd1306WriteCmd(SSD1306_SETLOWCOLUMN | (col & 0XF));
+    ssd1306WriteCmd(SSD1306_SETHIGHCOLUMN | (col >> 4));
+  }
+  if (m_row_changed) {
+    m_row_changed = false;
+    #if INCLUDE_SCROLLING
+      ssd1306WriteCmd(SSD1306_SETSTARTPAGE | ((m_row + m_pageOffset) & 7));
+    #else  // INCLUDE_SCROLLING
+      ssd1306WriteCmd(SSD1306_SETSTARTPAGE | m_row);
+    #endif  // INCLUDE_SCROLLING
+  }
 }
 #if INCLUDE_SCROLLING
 //------------------------------------------------------------------------------
@@ -172,12 +187,14 @@ void SSD1306Ascii::setStartLine(uint8_t line) {
 //-----------------------------------------------------------------------------
 void SSD1306Ascii::ssd1306WriteRam(uint8_t c) {
   if (m_col >= m_displayWidth) return;
+  updateCursor();
   writeDisplay(c^m_invertMask, SSD1306_MODE_RAM);
   m_col++;
 }
 //-----------------------------------------------------------------------------
 void SSD1306Ascii::ssd1306WriteRamBuf(uint8_t c) {
   if (m_col >= m_displayWidth) return;
+  updateCursor();
   writeDisplay(c^m_invertMask, SSD1306_MODE_RAM_BUF);
   m_col++;
 }
@@ -282,6 +299,7 @@ size_t SSD1306Ascii::write(uint8_t ch) {
     }
   }
   setRow(srow);
+  writeDisplay(0, SSD1306_MODE_RAM_BUF_END);
   return 1;
 }
 //------------------------------------------------------------------------------
